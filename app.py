@@ -3,11 +3,13 @@ import logging
 from slack_sdk import WebClient
 import json
 import os
+import datetime
 
-logging.basicConfig(level=logging.DEBUG)
+# Enable detailed logging with logging.DEBUG
+logging.basicConfig(level=logging.WARN)
 
 SLACK_BOT_TOKEN = os.getenv('SLACK_BOT_TOKEN')
-CHANNEL_ID = 'C03K8LKF0CT'
+CHANNEL_ID = 'C03M034MFAS'
 
 if SLACK_BOT_TOKEN is None:
     print('Please define the env variable SLACK_BOT_TOKEN')
@@ -17,16 +19,16 @@ if SLACK_BOT_TOKEN is None:
 def main():
 
     client = WebClient(SLACK_BOT_TOKEN)
-    response = client.conversations_history(channel=CHANNEL_ID)
 
-    print(response)
+    latest = datetime.datetime.utcnow() - datetime.timedelta(minutes=45)
+    response = client.conversations_history(channel=CHANNEL_ID, oldest=latest.timestamp())
 
-    for msg in response['messages']:
-        print(msg)
+    msgs = response['messages']
+    notification_msgs = [msg for msg in msgs if msg['subtype'] == 'bot_message' and 'went from' in msg['text']]
 
-    success = True
+    success = len(notification_msgs) > 0
     if success:
-        print("Recent notification detected, check successful")
+        print(f"{len(notification_msgs)} recent notifications detected, check successful")
         sys.exit(0)
     else:
         print("There were no recent notifications, check unsuccessful")
